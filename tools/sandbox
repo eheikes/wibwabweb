@@ -1,0 +1,393 @@
+#!/usr/bin/php
+<?php
+//
+// Modifies localhost environment for active development.
+// Can be run multiple times with no harmful effects.
+// WARNING: Makes changes to system files and re-imports the database from scratch!
+//
+// Usage: ./sandbox [CONFIG] ["off"]
+//   where CONFIG is the configuration file (defaults to ~/.wibwabweb)
+//
+// Use "./sandbox off" to turn off sandbox mode.
+//
+// Documentation: http://collab.arrowquick.com/wiki/web:wibwab_sandbox
+//
+
+// Displays an error message and quits.
+function Error($message)
+{
+	echo "$message\n";
+	exit(1);
+}
+
+// Create the config file.
+function CreateConfig($filename)
+{
+	global $os;
+	echo "The configuration file ($filename) doesn't exist yet. Creating...\n";
+
+	// Define the default settings.
+	$data = "";
+	$data .= "db_name=wibwabweb-com\n";
+	$data .= "db_user=aq_wibwabweb-com\n";
+	$data .= "db_pass=wibwdo4gcz8\n";
+	if ($os == "Darwin")
+	{
+		$data .= "apache_vhost=/Applications/MAMP/conf/apache/vhost.conf\n";
+		$data .= "apache_ctl=/Applications/MAMP/bin/apache2/bin/apachectl\n";
+	}
+	else
+	{
+		$data .= "apache_vhost=/etc/apache2/sites-enabled/000-default\n";
+		$data .= "apache_secure_vhost=/etc/apache2/sites-enabled/default-ssl\n";
+		$data .= "apache_ctl=" . `which apachectl`;
+	}
+	$data .= "admin_email=web@arrowquick.com\n";
+
+	// Save the settings to the specified file.
+	$success = file_put_contents($filename, $data);
+	if (!$success)
+	{
+		Error("Could not create configuration file '$filename'");
+	}
+	chmod($filename, 0600);
+}
+
+// Replace a regular expression (from a line) with a string.
+function ReplaceInFile($filename, $search, $replace, $allOccurrences = false, $sudo = false)
+{
+	global $base_path;
+	$cmd = ($sudo ? "sudo " : "")
+	     . "{$base_path}/tools/replacetext "
+	     . (!$allOccurrences ? "-1 " : "")
+	     . "'" . str_replace("'", "'\\''", $search) . "' "
+	     . "'" . str_replace("'", "'\\''", $replace) . "' "
+	     . "'" . str_replace("'", "'\\''", $filename) . "' ";
+	exec($cmd, $output, $ret);
+	if ($ret > 0)
+	{
+		Error("Could not modify $filename");
+	}
+}
+
+// Sets file permissions based on SVN "permissions" properties.
+function SetFilePermissions()
+{
+	global $base_path;
+	exec("svn -R propget permissions '$base_path'", $output, $ret);
+	foreach ($output as $line)
+	{
+		// Skip blank lines.
+		if (trim($line) == "") continue;
+		
+		// Split out the filename and permission values.
+		$parts = explode(" - ", $line);
+		// Modify the permissions.
+		if (count($parts) == 2)
+		{
+			chmod(trim($parts[0]), octdec("0" . trim($parts[1])));
+		}
+	}
+}
+
+// Deletes all tables from the database.
+function DeleteDb()
+{
+	global $config;
+	$cmd = "TABLES=\$("
+	     . "  mysql -u " . @$config['db_user']
+	     . " -p" . @$config['db_pass']
+	     . " -h localhost"
+	     . " " . @$config['db_name']
+	     . " -e 'show tables' | awk '{ print \$1}' | grep -v '^Tables' )"
+	     . " && "
+	     . "for t in \$TABLES; do"
+	     . "  mysql -u " . @$config['db_user']
+	     . "        -p" . @$config['db_pass']
+	     . "        -h localhost"
+	     . "        " . @$config['db_name']
+	     . "        -e \"drop table \$t\""
+	     . "; done"
+	     ;
+	exec($cmd, $output, $ret);
+	if ($ret > 0)
+	{
+		Error("Could not delete DB tables");
+	}
+}
+
+// Imports the SQL dump from SVN working copy into the database.
+function ImportSql()
+{
+	global $base_path, $config;
+	$cmd = "mysql -u " . @$config['db_user']
+	     . " -p" . @$config['db_pass']
+	     . " -h localhost"
+	     . " " . @$config['db_name']
+	     . " < '$base_path/_sql/wibwabweb-com.sql'";
+	exec($cmd, $output, $ret);
+	if ($ret > 0)
+	{
+		Error("Could not import SQL dump");
+	}
+}
+
+// Changes the "admin_email" option for all blogs to configured email address.
+function ChangeAdminEmail()
+{
+	global $dbh, $config;
+	
+	// Get a list of all the blogs.
+	$sql = "SELECT `blog_id` FROM `wp_blogs`";
+	foreach ($dbh->query($sql) as $row)
+	{
+		// For each blog, modify the "admin_email" option.
+		$sql = "UPDATE `wp_{$row['blog_id']}_options`"
+		     . " SET `option_value`=" . $dbh->quote($config['admin_email'])
+		     . " WHERE `option_name`='admin_email'";
+		$dbh->exec($sql);
+	}
+	
+	// Modify the admin_email for the main site.
+	$sql = "UPDATE `wp_sitemeta`"
+		 . " SET `meta_value`=" . $dbh->quote($config['admin_email'])
+		 . " WHERE `meta_key`='admin_email'";
+	$dbh->exec($sql);
+	
+	// Modify email addresses of all users.
+	$sql = "UPDATE `wp_users`"
+		 . " SET `user_email`=" . $dbh->quote($config['admin_email']);
+	$dbh->exec($sql);
+}
+
+// Changes password for all users to the password for "admin".
+function ChangePasswords()
+{
+	global $dbh, $config;
+	
+	// Get the admin's password.
+	$sql = "SELECT `user_pass` FROM `wp_users` WHERE `id` = 1";
+	$stmt = $dbh->query($sql);
+	$admin_pass = $stmt->fetchColumn();
+	
+	// Modify passwords of all users.
+	$sql = "UPDATE `wp_users`"
+		 . " SET `user_pass`=" . $dbh->quote($admin_pass);
+	$test = $dbh->exec($sql);
+}
+
+// Configure Apache for the sandbox.
+// Have to do it through the shell since we need to get root permission.
+function ApacheConfig($enable = true)
+{
+	global $dbh, $config, $base_path;
+	
+	if ($enable)
+	{
+		// Turn on Apache sandbox.
+		echo "  Modifying Apache virtual host...\n";
+		
+		// Modify the Apache vhost.
+		ReplaceInFile($config['apache_vhost'], "^\\s*DocumentRoot.*$", "\\0\nDocumentRoot {$base_path}/html", false, true);
+		ReplaceInFile($config['apache_vhost'], "^\\s*DocumentRoot.*$", "\\0\nServerAlias wibwabweb.com *.wibwabweb.com", false, true);
+		if (isset($config['apache_secure_vhost']))
+		{
+			ReplaceInFile($config['apache_secure_vhost'], "^\\s*DocumentRoot.*$", "\\0\nDocumentRoot {$base_path}/html", false, true);
+			ReplaceInFile($config['apache_secure_vhost'], "^\\s*DocumentRoot.*$", "\\0\nServerAlias wibwabweb.com *.wibwabweb.com", false, true);
+		}
+		
+		// Add each customer domain.
+		$sql = "SELECT `domain` FROM `wp_domain_mapping`";
+		foreach ($dbh->query($sql) as $row)
+		{
+			ReplaceInFile($config['apache_vhost'], "^\\s*DocumentRoot.*$", "\\0\nServerAlias {$row['domain']} www.{$row['domain']}", false, true);
+		}
+	}
+	else
+	{
+		// Turn off Apache sandbox.
+		echo "  Reverting Apache virtual host...\n";
+		
+		// Modify the Apache vhost.
+		ReplaceInFile($config['apache_vhost'], "^DocumentRoot {$base_path}/html$", "", true, true);
+		ReplaceInFile($config['apache_vhost'], "^ServerAlias wibwabweb.com \\*\\.wibwabweb.com$", "", true, true);
+		if (isset($config['apache_secure_vhost']))
+		{
+			ReplaceInFile($config['apache_secure_vhost'], "^DocumentRoot {$base_path}/html$", "", true, true);
+			ReplaceInFile($config['apache_secure_vhost'], "^ServerAlias wibwabweb.com \\*\\.wibwabweb.com$", "", true, true);
+		}
+
+		// Remove each customer domain.
+		$sql = "SELECT `domain` FROM `wp_domain_mapping`";
+		foreach ($dbh->query($sql) as $row)
+		{
+			ReplaceInFile($config['apache_vhost'], "^ServerAlias {$row['domain']} www.{$row['domain']}$", "", true, true);
+		}
+	}
+	
+	echo "  Reloading Apache...\n";
+	system("sudo {$config['apache_ctl']} restart");
+}
+
+// Configure HOSTS file for the sandbox.
+function HostsOverride($enable = true)
+{
+	global $dbh, $os;
+	
+	$hosts_file = "/etc/hosts";
+
+	if ($enable)
+	{
+		echo "  Adding DNS overrides to {$hosts_file}...\n";
+		system("sudo sh -c \"echo '127.0.0.1 wibwabweb.com www.wibwabweb.com' >> {$hosts_file}\"");
+
+		// Add entry for each customer domain.
+		$sql = "SELECT `domain` FROM `wp_domain_mapping`";
+		foreach ($dbh->query($sql) as $row)
+		{
+			system("sudo sh -c \"echo '127.0.0.1 {$row['domain']} www.{$row['domain']}' >> {$hosts_file}\"");
+		}
+
+		// Add entry for each customer subdomain (X.wibwabweb.com).
+		$sql = "SELECT `domain` FROM `wp_blogs` WHERE `blog_id` != 1";
+		foreach ($dbh->query($sql) as $row)
+		{
+			system("sudo sh -c \"echo '127.0.0.1 {$row['domain']}' >> {$hosts_file}\"");
+		}
+	}
+	else
+	{
+		echo "  Removing DNS overrides from {$hosts_file}...\n";
+		ReplaceInFile($hosts_file, "^127.0.0.1 wibwabweb.com www.wibwabweb.com$", "", true, true);
+
+		// Remove entry for each customer domain.
+		$sql = "SELECT `domain` FROM `wp_domain_mapping`";
+		foreach ($dbh->query($sql) as $row)
+		{
+			ReplaceInFile($hosts_file, "^127.0.0.1 {$row['domain']} www.{$row['domain']}$", "", true, true);
+		}
+
+		// Remove entry for each customer subdomain (X.wibwabweb.com).
+		$sql = "SELECT `domain` FROM `wp_blogs` WHERE `blog_id` != 1";
+		foreach ($dbh->query($sql) as $row)
+		{
+			ReplaceInFile($hosts_file, "^127.0.0.1 {$row['domain']}$", "", true, true);
+		}
+	}
+	
+	// In OS X, we have to manually flush the DNS cache.
+	if ($os == "Darwin")
+	{
+		system("sudo dscacheutil -flushcache");
+	}
+}
+
+// Main process.
+function Sandbox($args)
+{
+	// Figure out which OS this is.
+	global $os;
+	$os = trim(`uname`);
+	echo "Detecting OS... $os\n";
+
+	// Define the config file.
+	$config_file = "~/.wibwabweb";
+	$config_file = trim(`echo $config_file`); // force expansion of filename
+	if (count($args) > 0
+	and $args[0] != "off")
+	{
+		$config_file = $args[0];
+	}
+
+	// Load the config file.
+	echo "Loading local configuration ($config_file)...\n";
+	if (!file_exists($config_file))
+	{
+		CreateConfig($config_file);
+	}
+	global $config;
+	$config = parse_ini_file($config_file);
+	
+	// Get the path of the wibwabweb folder.
+	global $base_path;
+	$base_path = dirname(dirname(__FILE__));
+	
+	// Connect to the database. (Always use localhost for safety.)
+	global $dbh;
+	try
+	{
+		$dbh = new PDO(
+			'mysql:host=localhost;dbname=' . $config['db_name'],
+			$config['db_user'],
+			$config['db_pass']
+		);
+	}
+	catch (PDOException $e)
+	{
+		Error("Unable to connect to database (" . $e->getMessage() . ")");
+	}
+
+	// Check for "off" parameter.
+	if (@$args[0] == "off"
+	or  @$args[1] == "off")
+	{
+		echo "Disabling sandbox...\n";
+		ApacheConfig(false);
+		HostsOverride(false);
+		exit(0);
+	}
+	
+	echo "Enabling sandbox...\n";
+	
+	// Run SVN update.
+	//echo "  Updating working copy...\n";
+	//system("svn update -q \"$base_path\"");
+
+	// Turn on WP_DEBUG.
+	echo "  Turning on WP_DEBUG...\n";
+	ReplaceInFile("$base_path/html/wp-config.php", ".*define\('WP_DEBUG'.*", "define('WP_DEBUG', true);");
+
+	// Rewrite wp-config.php (database configuration).
+	// For safety, always use localhost for DB host.
+	echo "  Setting database configuration...\n";
+	ReplaceInFile("$base_path/html/wp-config.php", ".*define\('DB_HOST'.*",     "define('DB_HOST', 'localhost');");
+	ReplaceInFile("$base_path/html/wp-config.php", ".*define\('DB_NAME'.*",     "define('DB_NAME', '{$config['db_name']}');");
+	ReplaceInFile("$base_path/html/wp-config.php", ".*define\('DB_USER'.*",     "define('DB_USER', '{$config['db_user']}');");
+	ReplaceInFile("$base_path/html/wp-config.php", ".*define\('DB_PASSWORD'.*", "define('DB_PASSWORD', '{$config['db_pass']}');");
+
+	// Set necessary file permissions.
+	//echo "  Setting file permissions...\n";
+	//SetFilePermissions();
+
+	// Delete and re-import the database.
+	echo "  Importing {$config['db_name']} database from scratch...\n";
+	DeleteDb();
+	ImportSql();
+	
+	// Change email addresses in settings for blogs.
+	echo "  Changing admin email addresses to {$config['admin_email']}...\n";
+	ChangeAdminEmail();
+	
+	// Change passwords for all users.
+	echo "  Changing user passwords to admin's password...\n";
+	ChangePasswords();
+
+	// Change Apache config & restart.
+	ApacheConfig();
+	
+	// Add override to HOSTS file.
+	HostsOverride();
+}
+
+// Sanity check that this is being run from the command line
+//   and register_argc_argv has not been turned off.
+if (!isset($argv))
+{
+	Error("Command line parameters not found");
+}
+
+$args = $argv;
+array_shift($args);
+Sandbox($args);
+
+?>

@@ -1,0 +1,12 @@
+#!/bin/bash
+#
+# Deploys changes to a remote server.
+#
+# Usage: ./deploy.sh REVS [SERVER]
+#   where REVS is the comma-separated list of SVN revision numbers
+#   where SERVER is the server name or IP (defaults to live server)
+#
+
+# TODO message about needing to blog about this,
+#   or just YammerBot it.
+# Be sure to check if changes to the file have been made since committed.

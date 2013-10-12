@@ -1,0 +1,6 @@
+#!/bin/sh
+
+BASEDIR=$(dirname $0)
+
+msgfmt -cv -o "$BASEDIR/../html/wp-content/languages/aq-wibwabweb.mo"    "$BASEDIR/../html/wp-content/languages/aq-wibwabweb.po"
+msgfmt -cv -o "$BASEDIR/../html/wp-content/languages/ms-aq-wibwabweb.mo" "$BASEDIR/../html/wp-content/languages/ms-aq-wibwabweb.po"

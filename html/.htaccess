@@ -1,0 +1,44 @@
+RewriteEngine On
+RewriteBase /
+RewriteRule ^index\.php$ - [L]
+
+# Redirect non-www to www.
+RewriteCond %{HTTP_HOST} ^wibwabweb\.com$ [nc]
+RewriteRule ^(.*)$ http://www.wibwabweb.com/$1 [R=permanent,L]
+
+# Redirect /sign-up to /wp-signup.php
+RewriteRule ^sign-up(/?)$  /wp-signup.php [R=permanent,L]
+
+#the line below might need to be changed when the site goes live.
+ErrorDocument 404 /index.php?error=404
+
+# Increase PCRE limit for large galleries.
+php_value pcre.backtrack_limit 1000000
+
+# Bump up memory limit for Plugin Stats page.
+php_value memory_limit 67108864
+
+# uploaded files
+RewriteRule ^files/(.+) wp-includes/ms-files.php?file=$1 [L]
+
+# add a trailing slash to /wp-admin
+RewriteCond %{REQUEST_URI} ^.*/wp-admin$
+RewriteRule ^(.+)$ $1/ [R=301,L]
+
+# Wordpress redirection
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule . - [L]
+RewriteRule . index.php [L]
+
+# Bypass security filter for some files
+<IfModule mod_security.c>
+<Files async-upload.php>
+SecFilterEngine Off
+SecFilterScanPOST Off
+</Files>
+<Files rpc.php>
+SecFilterEngine Off
+SecFilterScanPOST Off
+</Files>
+</IfModule>

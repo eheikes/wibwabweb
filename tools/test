@@ -1,0 +1,102 @@
+#!/usr/bin/php
+<?php
+//
+// Runs test suite against localhost sandbox.
+//
+// Usage: ./test [TESTS]
+//   TODO where TESTS are the tests to run (defaults to all tests)
+//
+// Documentation: http://collab.arrowquick.com/wiki/web:wibwab_tests
+//
+
+// TODO convert to HTML reports? (CodeCoverage, logs?)
+
+// Displays an error message and quits.
+function Error($message)
+{
+	echo "$message\n";
+	exit(1);
+}
+
+// Get the path of the wibwabweb folder.
+global $base_path;
+$base_path = dirname(dirname(__FILE__));
+
+// Tests functionality of code at the unit & integration level.
+// TODO Only runs tests from the specified group(s). A test can be tagged as belonging to a group using the @group annotation. The @author annotation is an alias for @group allowing to filter tests based on their authors.
+function TestCode($groups = array())
+{
+	echo "Testing code (low-level)...\n";
+	
+	// http://phpmaster.com/getting-started-with-phpunit/
+	// http://www.slideshare.net/sebastian_bergmann/testing-php-applications-with-phpunit-3-8227
+	// http://www.phpunit.de/manual/3.5/en/writing-tests-for-phpunit.html
+	// http://www.sitepoint.com/advanced-phpunit-testing-annotations-and-mocking/
+
+	/*
+	// Sanity check that phpunit is installed.
+	$phpunit = trim(`which phpunit`);
+	if ($phpunit == "")
+	{
+		Error("Can't find phpunit -- is it installed?");
+	}
+
+	// TODO upgrade PHPUnit packages?
+
+	// Run the PHPUnit tests.
+	passthru("phpunit --verbose tests/phpunit/all");
+	*/
+	
+	$checklist = array(
+		"Verify no PHP errors/warnings/notices appear on the pages.",
+		"Look for any “TODO” or “BUG” items in the code itself.",
+		"Make sure all wp_X_options WP_LANG values are aq-wibwabweb",
+	);
+	PrintChecklist($checklist);
+}
+
+// Tests functionality of the website at the system level.
+function TestApp()
+{
+	echo "Testing app (high-level)...\n";
+
+	// TODO: Cucumber, Watir, Selenium?
+	// Cucumber: http://jamieonsoftware.com/journal/2011/1/2/high-level-testing-php-applications-with-cucumber.html
+	// Watir: http://watir.com/
+	// Splinter: http://f.souza.cc//2011/05/splinter-python-tool-for-acceptance-tests-on-web-applications/
+	// Zombie: http://labnotes.org/2010/12/30/zombie-js-insanely-fast-full-stack-headless-testing/
+	
+	$checklist = array(
+		"Login as a regular user. Add form elements (<input>, <select>) to a page, save the changes, and verify that the elements have not been removed.",
+		"TODO check for menus",
+	);
+	PrintChecklist($checklist);
+}
+
+// Tests performance of the system.
+function TestPerformance()
+{
+	echo "Testing performance...\n";
+	
+	// TODO: ab, httperf, JMeter, Grinder, OpenSTA, ...
+	// Siege is a HTTP benchmarking tool.
+}
+
+// This is just a temporary function until real frameworks are used.
+function PrintChecklist($checklist)
+{
+	echo "    At this time, it must be done manually. Please check the following:\n";
+	foreach ($checklist as $item)
+	{
+		echo "[ ] " . $item . "\n";
+	}
+	
+	echo "    Press Enter to continue...\n";
+	$c = fread(STDIN, 1);
+}
+
+TestCode();
+TestApp();
+TestPerformance();
+
+?>

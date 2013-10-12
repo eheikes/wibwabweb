@@ -1,0 +1,110 @@
+#!/usr/bin/php
+<?php
+//
+// Searches file for matching lines of text and replaces them.
+// Works on a line-by-line basis (PCRE multiline mode).
+//
+
+function Usage()
+{
+	echo "Usage: {$_SERVER['SCRIPT_FILENAME']} [-1] regex-pattern replacement-text file\n";
+}
+
+function Error($msg, $exitCode = 1)
+{
+	echo "$message\n";
+	exit($exitCode);
+}
+
+// Replace a regular expression (from a line) with a string.
+//   $filename is the filename (typically using an absolute path).
+//   $search is a Perl regular expression to match against a line.
+//   $replace is the string to replace the match with (empty to delete the entire line).
+//   $allOccurrences specifies whether only the all occurrences should be replaced,
+//      or just the first.
+function ReplaceInFile($filename, $search, $replace, $allOccurrences = false)
+{
+	// Store the contents of the file.
+	$contents = file_get_contents($filename);
+	if ($contents === false)
+	{
+		Error("Could not retrieve contents of $filename");
+	}
+	
+	// Replace the matches.
+	$regex = str_replace("#", "\\#", $search); // escape the delimiter
+	if ($replace == "")
+	{
+		// Handle start anchor.
+		if ($regex[0] == "^")
+		{
+			$regex = substr($regex, 1);
+		}
+		else
+		{
+			$regex = ".*" . $regex;
+		}
+		
+		// Handle end anchor.
+		if ($regex[strlen($regex) - 1] == "$")
+		{
+			$regex = substr($regex, 0, -1);
+		}
+		else
+		{
+			$regex = $regex . ".*";
+		}
+		
+		$contents = preg_replace(
+			"#(^|[\\r\\n])" . $regex . "[\\r\\n]?#m",
+			"\\1",
+			$contents,
+			($allOccurrences ? -1 : 1)
+		);
+	}
+	else
+	{
+		$contents = preg_replace(
+			"#^" . $regex . "$#m",
+			$replace,
+			$contents,
+			($allOccurrences ? -1 : 1)
+		);
+	}
+	if (is_null($contents))
+	{
+		Error("Error changing the contents of $filename");
+	}
+
+	// Save the revised contents back to the file.
+	$success = file_put_contents($filename, $contents);
+	if ($success === false)
+	{
+		Error("Could not save contents to $filename");
+	}
+}
+
+// Check parameters.
+switch ($argc)
+{
+	case 4:
+		ReplaceInFile($argv[3], $argv[1], $argv[2], true);
+		break;
+		
+	case 5:
+		if ($argv[1] == "-1")
+		{
+			ReplaceInFile($argv[4], $argv[2], $argv[3], false);
+		}
+		else
+		{
+			ReplaceInFile($argv[4], $argv[2], $argv[3], true);
+		}
+		break;
+	
+	default:
+		Usage();
+		break;
+}
+
+?>

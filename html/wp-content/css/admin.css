@@ -1,0 +1,77 @@
+/*
+ * Additional rules for the admin control panel.
+ */
+
+table.ruled {
+    border: 1px solid #dfdfdf;
+    border-spacing: 0;
+}
+
+table.ruled td,table.ruled th {
+    padding: .25em .5em;
+    text-align: left;
+}
+
+table.ruled th {
+    background-color: #F1F1F1;
+    border-bottom: 1px solid #dfdfdf;
+}
+
+table.ruled td {
+    border-top: 1px solid #dfdfdf;
+    padding: .25em .5em;
+}
+
+table.ruled tr:first-child td {
+    border-top: none;
+}
+
+table.ruled td.checkmarks {
+    text-align: center;
+}
+
+#update-nag, .plugin-update, .important-message {
+    text-align: center;
+    background-color: #fffeeb;
+    border-color: #ccc;
+    border-style: solid none;
+    border-width: 1px 0;
+    border-top: none;
+    color: #555;
+    line-height: 29px;
+}
+
+#plan_names th { 
+	width:20%;
+}
+
+#plan_prices td {
+	text-align:center;
+}
+
+.wrap {
+    margin:20px 15px 0 5px;
+}
+
+/*
+ * Override logo in the admin bar.
+ */
+#wp-admin-bar-wp-logo > .ab-item .ab-icon
+{
+	background-image: url(../images/w-logo.png?d=20120112);
+	background-position: 0 0;
+}
+
+#wpadminbar.nojs #wp-admin-bar-wp-logo:hover > .ab-item .ab-icon,
+#wpadminbar #wp-admin-bar-wp-logo.hover > .ab-item .ab-icon
+{
+	background-position: 0 0;
+}
+
+/*
+ * Override badge on Welcome panel in Dashboard.
+ */
+.wp-badge
+{
+	background-image: url(../images/happy-badge.png?d=20120112);
+}
