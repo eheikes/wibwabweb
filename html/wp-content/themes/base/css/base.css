@@ -1,0 +1,148 @@
+/* =============================================================================
+   Base
+   ========================================================================== */
+
+/* apply a natural box layout model to all elements 
+   http://paulirish.com/2012/box-sizing-border-box-ftw/ */
+* { -moz-box-sizing: border-box; -webkit-box-sizing: border-box; box-sizing: border-box; }
+
+body { }
+
+h1, h2, h3, h4, h5, h6 {
+	margin-top: 1em;
+	margin-bottom: 0;
+}
+
+p, ul, ol, dl {
+	margin-top: 0;
+	margin-bottom: 1em;
+}
+
+.clearall {
+	clear: both;
+}
+
+
+/* =============================================================================
+   Header
+   ========================================================================== */
+
+#banner { }
+
+
+
+/* =============================================================================
+   Content
+   ========================================================================== */
+
+#content { }
+
+
+
+/* =============================================================================
+   Primary Content
+   ========================================================================== */
+
+#main { }
+
+
+
+/* =============================================================================
+   Sidebar
+   ========================================================================== */
+
+#sidebar { }
+
+
+
+/* =============================================================================
+   Posts
+   ========================================================================== */
+
+.hentry header { }
+.hentry h2 a { text-decoration: none; }
+.hentry h2 a:hover, .hentry h2 a:active { text-decoration: underline; }
+.hentry time { display: block; }
+.hentry p.byline { }
+.hentry footer { clear: both; }
+
+
+
+/* =============================================================================
+   Post Comments
+   ========================================================================== */
+
+#comments, #respond, #submit { clear: both; display: block; }
+
+#respond label,
+#respond input {
+	display: block;
+}
+
+#respond label {
+	font-weight: bold;
+	margin-top: 1em;
+}
+
+#respond label:nth-of-type(1) {
+	margin-top: 0;
+}
+
+#respond .more-info {
+	font-size: smaller;
+}
+
+#respond .btn {
+	margin: 1em 0;
+}
+
+/* =============================================================================
+   Footer
+   ========================================================================== */
+
+#content-info {
+}
+
+
+
+
+/* =============================================================================
+   WordPress Generated Classes
+   See: http://codex.wordpress.org/CSS#WordPress_Generated_Classes
+   ========================================================================== */
+
+.aligncenter { display: block; margin: 0 auto; }
+.alignleft { margin: 0 1em .5em 0; float: left; }
+.alignright { margin: 0 0 .5em 1em; float: right; }
+.alignnone { margin: 0 1em 1em 0; }
+
+.wp-caption {
+	background: #eee;
+	border: 1px solid #ddd;
+	padding: 5px 3px;
+	margin-bottom: 1em;
+	-moz-border-radius: .25em;
+	-webkit-border-radius: .25em;
+	-khtml-border-radius: .25em;
+    border-radius: .25em;
+	text-align: center;
+}
+
+.wp-caption img {
+	border: 0 none;
+	height: auto;
+	margin: 0;
+	padding: 0;
+}
+
+.wp-caption p.wp-caption-text {
+	font-size: 11px;
+	line-height: 16px;
+	margin: 0;
+	margin-top: 5px;
+}
+
+.wp-smiley {
+	margin: 0 !important;
+	max-height: 1em;
+}
