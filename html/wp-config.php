@@ -16,16 +16,16 @@
 
 // ** MySQL settings - You can get this info from your web host ** //
 /** The name of the database for WordPress */
-define('DB_NAME', 'wibwabweb-com');
+define('DB_NAME', 'database_name_here');
 
 /** MySQL database username */
-define('DB_USER', 'aq_wibwabweb-com');
+define('DB_USER', 'username_here');
 
 /** MySQL database password */
-define('DB_PASSWORD', 'wibwdo4gcz8');
+define('DB_PASSWORD', 'password_here');
 
 /** MySQL hostname */
-define('DB_HOST', 'dbs.arrowquick.net');
+define('DB_HOST', 'localhost');
 
 /** Database Charset to use in creating database tables. */
 define('DB_CHARSET', 'utf8');
@@ -48,14 +48,14 @@ define('BLOGID_CURRENT_SITE', '1' );
  *
  * @since 2.6.0
  */
-define('AUTH_KEY', 'a6dc0f317be240b260689f0722f99d7fefe194f7b8b97cf2e55697096d3266b7');
-define('SECURE_AUTH_KEY', '95e63822db26be110429757dffebb7f5c68859d9399c443cb960853a956df33d');
-define('LOGGED_IN_KEY', '40a2e637f79e0e8b86372385eafbe83c70818dd3f9660aea0c4b0a92181cd2f3');
-define('NONCE_KEY', 'b5ec1385f2b023512843a069ac854b33a5f435f1afa15589af5f9bddfd44dceb');
-define('AUTH_SALT', '85f659a47864f35c0550f68cf46a297025b764434d1f6a6b2fe81727709788c1');
-define('LOGGED_IN_SALT', '44bee77f699151dd23cc7c476932ad27840b08ab16253dc3afb9ef0a70cd8f0b');
-define('SECURE_AUTH_SALT', 'f652410266a540969c81b0eb4bd091364b1a767bfd7ff0daf11fdbfa65896ead');
-define( 'NONCE_SALT', 'a3)xW;#T-(>-(GdbO@ch512S/| ,MvUi4z/sQkw|VXizEw&^]Gx%+nSqjGUIKVUP' );
+define('AUTH_KEY',         'put your unique phrase here');
+define('SECURE_AUTH_KEY',  'put your unique phrase here');
+define('LOGGED_IN_KEY',    'put your unique phrase here');
+define('NONCE_KEY',        'put your unique phrase here');
+define('AUTH_SALT',        'put your unique phrase here');
+define('SECURE_AUTH_SALT', 'put your unique phrase here');
+define('LOGGED_IN_SALT',   'put your unique phrase here');
+define('NONCE_SALT',       'put your unique phrase here');
 
 /**#@-*/
 
